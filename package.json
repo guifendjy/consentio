@@ -1,0 +1,21 @@
+{
+  "name": "consentio",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@iconify-json/material-symbols": "^1.2.78",
+    "unplugin-icons": "^23.0.1",
+    "vite": "^8.0.12"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.3.0",
+    "minibum": "^2.0.7",
+    "tailwindcss": "^4.3.0"
+  }
+}
