@@ -6,10 +6,13 @@
   "scripts": {
     "dev": "vite --host",
     "build": "vite build",
+    "deploy": "gh-pages -d dist",
+    "predeploy": "npm run build",
     "preview": "vite preview"
   },
   "devDependencies": {
     "@iconify-json/material-symbols": "^1.2.78",
+    "gh-pages": "^6.3.0",
     "unplugin-icons": "^23.0.1",
     "vite": "^8.0.12"
   },
@@ -17,5 +20,8 @@
     "@tailwindcss/vite": "^4.3.0",
     "minibum": "^2.0.7",
     "tailwindcss": "^4.3.0"
+  },
+  "allowScripts": {
+    "fsevents@2.3.3": true
   }
 }

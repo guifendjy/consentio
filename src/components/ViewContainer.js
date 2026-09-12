@@ -29,12 +29,6 @@ export default function ViewContainer({
 }) {
 
   return E.div({
-    onMount(){
-      // the body color does not change if it's the same color.
-        if(document.body.classList.contains(bgColor)) return
-        document.body.classList.add(bgColor) // sync with doc bg
-        return ()=> document.body.classList.remove(bgColor);
-    } ,
     className: {
       $static: `mb-view-container absolute inset-0 w-full h-full flex flex-col justify-between ${bgColor} text-zinc-900 select-none overflow-hidden font-sans ${animation  ? animation:'' } z-${zIndex}`,
     },
