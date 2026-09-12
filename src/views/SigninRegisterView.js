@@ -27,8 +27,6 @@ const handleSubmit = (e) => {
     ...(isRegister.value && { name: fullName.value }),
   };
 
-  console.log("Authenticating with:", payload);
-
   // Simulate API call and transition state
   authSignal.value = { email: payload.email, token: "mock-jwt-token" };
   if (onAuthSuccess) onAuthSuccess();
@@ -38,7 +36,7 @@ const SigninView = () =>
   ViewContainer({
     content: E.div({
       className:
-        "h-full flex flex-col justify-between px-4 pt-6 pb-8 text-zinc-950",
+        "h-full flex flex-col justify-between px-4 text-zinc-950",
       children: [
         E.div({
           className: "flex justify-center mb-6",
@@ -46,7 +44,7 @@ const SigninView = () =>
             E.div({
               className: "flex items-center justify-center",
               style: { transform: "scale(1.15)" },
-              children: [ConsentioLogo()],
+              children: ConsentioLogo(),
             }),
           ],
         }),
@@ -167,6 +165,31 @@ const SigninView = () =>
                 }),
                 E.button({
                   type: "button",
+                  className:
+                    "w-full py-4 rounded-full border border-zinc-200 text-sm font-semibold tracking-wide hover:bg-zinc-50 transition-colors shadow-xm flex items-center justify-center gap-2",
+                  children: [
+                    E.svg({
+                      className: "h-4 w-4",
+                      viewBox: "0 0 24 24",
+                      fill: "none",
+                      stroke: "currentColor",
+                      strokeWidth: 2,
+                      strokeLinecap: "round",
+                      strokeLinejoin: "round",
+                      children: [
+                        E.path({ d: "M7 10V7.5a5 5 0 0 1 10 0V10" }),
+                        E.rect({ x: 5, y: 10, width: 14, height: 10, rx: 2 }),
+                      ],
+                    }),
+                    E.span({
+                      textContent: isRegister.derived((reg) =>
+                        reg ? "Create A Passkey" : "Sign In With Passkey",
+                      ),
+                    }),
+                  ],
+                }),
+                E.button({
+                  type: "button",
                   className: {
                     $static:
                       "text-center text-sm text-zinc-500 hover:text-zinc-700 transition-colors cursor-pointer self-center",
@@ -179,17 +202,29 @@ const SigninView = () =>
           ],
         }),
 
+
+        // footer
         E.div({
           className:
-            "flex items-start gap-2.5 max-w-xs mx-auto text-zinc-500 leading-5 text-[11px]",
+            "flex items-start justify-center gap-2 max-w-[14rem] mx-auto text-zinc-400 text-[10px]",
           children: [
-            E.i({
-              className: "ti ti-lock text-sm shrink-0 mt-0.5 text-zinc-400",
+            E.svg({
+              className: "h-3 w-3 shrink-0 mt-0.5 text-zinc-400",
+              viewBox: "0 0 24 24",
+              fill: "none",
+              stroke: "currentColor",
+              strokeWidth: 1.8,
+              strokeLinecap: "round",
+              strokeLinejoin: "round",
+              children: [
+                E.path({ d: "M7 10V7.5a5 5 0 0 1 10 0V10" }),
+                E.rect({ x: 5, y: 10, width: 14, height: 10, rx: 2 }),
+              ],
             }),
             E.span({
-              className: "font-sm tracking-wide text-balance text-center",
+              className: "text-center whitespace-normal",
               textContent:
-                "End-to-end encrypted protocol. Your data remains completely confidential and secure.",
+                "End-to-end encrypted protocol.",
             }),
           ],
         }),

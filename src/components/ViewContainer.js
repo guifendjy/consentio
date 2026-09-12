@@ -1,4 +1,4 @@
-import E from "minibum";
+import E from "minibum"
 
 /**
  * ViewContainer (Scaffold Architecture)
@@ -9,18 +9,34 @@ import E from "minibum";
  * @param {Object} [config.header] - Optional element pinned directly to the absolute top
  * @param {Object} [config.footer] - Optional element pinned directly to the absolute bottom (e.g., TabBar, FAB, Buttons)
  * @param {string} [config.bgColor] - Custom tailwind background color configuration overrides
- * @param {Object} [config.animation] - Animation configuration for enter/leave transitions
+ * @param {string} [config.headerBg] - Custom tailwind background color configuration for the header.
+ * @param {string} [config.footerBg] - Custom tailwind background color configuration for the footer.
+ * @param {number} [config.zIndex] -  zIndex configuration overrides
+ * @param {string|Object} [config.animation] - Custom Tailwind animation configuration overrides.
+ * @param {string} [config.animation.enter] - Animation class applied on enter.
+ * @param {string} [config.animation.leave] - Animation class applied on leave.
+ * 
  */
 export default function ViewContainer({
   content,
   header = null,
   footer = null,
+  headerBg=null,
+  footerBg=null,
   bgColor = "bg-[#fafafa]",
+  zIndex=null,
+  animation=null,
 }) {
+
   return E.div({
-    id: "mb-view-container",
+    onMount(){
+      // the body color does not change if it's the same color.
+        if(document.body.classList.contains(bgColor)) return
+        document.body.classList.add(bgColor) // sync with doc bg
+        return ()=> document.body.classList.remove(bgColor);
+    } ,
     className: {
-      $static: `absolute inset-0 w-full h-full flex flex-col justify-between ${bgColor} text-zinc-900 select-none overflow-hidden font-sans`,
+      $static: `mb-view-container absolute inset-0 w-full h-full flex flex-col justify-between ${bgColor} text-zinc-900 select-none overflow-hidden font-sans ${animation  ? animation:'' } z-${zIndex}`,
     },
     children: [
       header
@@ -40,5 +56,5 @@ export default function ViewContainer({
           })
         : null,
     ],
-  });
+  })
 }

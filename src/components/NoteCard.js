@@ -1,8 +1,10 @@
 // components/NoteCard.js
 import E from "minibum";
-import { signatureModalConfig } from "./SignatureModal";
-import { Modal } from "../store";
+import openDocumentPreviewSheet from "./openDocumentPreviewSheet";
 
+//NOTE: we can use this for shared not, but when the user opens it, 
+// they have the option to decline or sign it and let you know.
+// so the sheet to showcase the document should use a flag that let's them know to render for generetadNotes and sharedNotes.
 
 /**
  * A versatile, conversational card component that shifts context,
@@ -11,125 +13,93 @@ import { Modal } from "../store";
  *
  * @param {Object} doc - The plain document entity data.
  */
+
+
 export default function NoteCard(doc) {
-  // Determine if this is an incoming request from someone else requiring my feedback
-  const isIncomingInvite = !doc.isMine;
 
-  return E.div({
-    className:
-      "p-5 bg-white border border-zinc-100 rounded-3xl shadow-sm flex flex-col gap-4 mb-1 transition-transform active:scale-[0.995]",
-    children: [
-      E.div({
-        className: "flex justify-between items-start",
-        children: [
-          E.div({
-            className: "space-y-0.5",
-            children: [
-              E.h3({
-                className:
-                  "text-[10px] mb-2 font-bold text-zinc-400 uppercase tracking-wider",
-                textContent: isIncomingInvite ? "Incoming Invite" : "Note",
-              }),
-              E.p({
-                className: "text-sm font-semibold text-zinc-800",
-                textContent: `${doc.proposer || "You"} & ${doc.consenter || "Partner"}`,
-              }),
-            ],
-          }),
-          // Warm Relationship Status Badge
-          E.cond(doc.status, (statusValue) => {
-            const isSigned = statusValue === "Verified & Signed";
-            return E.span({
-              className: `px-2.5 py-1 rounded-full text-[10px] font-medium tracking-wide ${
-                isSigned
-                  ? "bg-emerald-50 text-emerald-700"
-                  : isIncomingInvite
-                    ? "bg-amber-50 text-amber-700"
-                    : "bg-zinc-50 text-zinc-500"
-              }`,
-              textContent: isSigned
-                ? "On the same page"
-                : isIncomingInvite
-                  ? "Review needed"
-                  : "Still reviewing",
-            });
-          }),
-        ],
-      }),
+  const DocumentSheet =  openDocumentPreviewSheet(doc)
 
-      // Soft, Conversational Summary Breakdown
-      E.div({
-        className:
-          "text-xs text-zinc-500 space-y-1.5 bg-zinc-50/60 p-3.5 rounded-2xl border border-zinc-50/80 font-normal",
-        children: [
-          E.p({
-            textContent: `For when: ${doc.timeType === "term" ? "Our ongoing relationship" : "Our upcoming date together"}`,
-          }),
-          E.p({
-            textContent: `What we like: ${doc.acts && doc.acts.length > 0 ? doc.acts.join(", ") : "Nothing selected yet"}`,
-          }),
-        ],
-      }),
+return E.div({
+  onclick: () => {
+    DocumentSheet.open();
+  },
+  className:
+    "border-l-5 border-black/50 group p-4 bg-white/90 backdrop-blur-md border border-zinc-200/80 rounded-2xl shadow-sm hover:shadow-md hover:border-zinc-300 flex flex-col gap-3 mb-3 transition-all duration-200 ease-out active:scale-[0.985] cursor-pointer manipulation-none select-none",
+  children: [
+    // TOP SECTION: Header & Actions
+    E.div({
+      className: "flex items-center justify-between w-full pb-2.5 border-b border-zinc-100",
+      children: E.div({
+          className: "flex items-center gap-3 min-w-0 pr-2",
+          children: [
+            // Apple-style Monogram Avatar
+            E.div({
+              className:
+                "w-9 h-9 rounded-full bg-black flex items-center justify-center text-xs font-semibold tracking-wider text-white shadow-xs shrink-0 ring-1 ring-black/5",
+              textContent: doc.proposer.slice(0, 1).toUpperCase() + doc.consenter.slice(0, 1).toUpperCase(),
+            }),
+            E.div({
+              className: "min-w-0",
+              children: [
+                E.p({
+                  className:
+                    "text-[14px] font-semibold text-zinc-900 tracking-tight truncate leading-tight",
+                  textContent: `${doc.proposer || "You"} & ${doc.consenter || "Partner"}`,
+                }),
+                // Optional subtitle or document tag
+                E.p({
+                  className: "text-[11px] font-medium text-zinc-400 uppercase tracking-wider mt-0.5",
+                  textContent: "Mutual Agreement",
+                }),
+              ],
+            }),
+          ],
+        }),
+      
+    }),
 
-      E.cond(doc.status, (statusValue) => {
-        if (statusValue === "Verified & Signed") {
-          // Finalized State: Saved download configuration
-          return E.button({
-            type: "button",
-            className:
-              "w-full py-3 rounded-xl bg-zinc-950 text-white text-xs font-semibold cursor-pointer text-center flex items-center justify-center gap-2 transition-opacity active:opacity-90",
-            children: [E.span({ textContent: "Save our notes (PDF)" })],
-          });
-        } else {
-          // Pending State: Forking paths depending on who received it
-          return E.div({
-            className: "flex gap-2 w-full",
-            children: [
-              // Primary CTA
-              isIncomingInvite
-                ? E.button({
-                    type: "button",
+    // BOTTOM SECTION: Status, Timestamp & Summary Meta
+    E.div({
+      className: "flex flex-col gap-2 pt-0.5",
+      children: [
+        // Status & Created Timestamp Bar
+        E.div({
+          className: "flex items-center justify-between text-[11px] font-medium text-zinc-400 pt-1",
+          children: [
+            // Status Tag / Value
+            E.div({
+              className: "flex items-center gap-1.5",
+              children: [
+                E.span({
+                  className: "w-1.5 h-1.5 rounded-full bg-zinc-400",
+                }),
+                E.span({
+                  className: "text-zinc-700 font-medium",
+                  textContent: typeof doc.status === "object" ? doc.status.value : doc.status || "Draft",
+                }),
+                
+                // Signed Badge
+                E.cond(doc.status, (statusVal) => {
+                  const isSigned = statusVal === "Verified & Signed";
+                  if (!isSigned) return null;
+                  return E.span({
                     className:
-                      "flex-1 py-3 rounded-xl bg-zinc-950 text-white text-xs font-semibold cursor-pointer text-center transition-all active:opacity-90",
-                    textContent: "Review & Confirm",
-                    onclick() {
-                      signatureModalConfig.value = {
-                        isOpen: true,
-                        targetDoc: doc,
-                      };
-                    },
-                  })
-                : E.button({
-                    type: "button",
-                    className:
-                      "flex-1 py-3 rounded-xl bg-zinc-950 text-white text-xs font-semibold cursor-pointer text-center transition-all active:opacity-90",
-                    textContent: "Delete note",
-                    onclick() {
-                      // implement delete logic here
-                      Modal.show({
-                        title: "Delete Note",
-                        message: "Are you sure you want to delete this note? This action cannot be undone.",
-                        confirmText: "Delete",
-                        cancelText: "Cancel",
-                        onConfirm: () => {
-                          // Call the delete function here
-                          console.log("Note deleted:", doc);
-                        }
-                      });
-                    },
-                  }),
-              // Secondary CTA
-              E.button({
-                type: "button",
-                className:
-                  "flex-1 py-3 rounded-xl border border-zinc-200 bg-white text-zinc-600 text-xs font-medium cursor-pointer text-center transition-all active:bg-zinc-50",
-                textContent: isIncomingInvite ? "Decline" : "Send Invite",
-                onclick() {},
-              }),
-            ],
-          });
-        }
-      }),
-    ],
-  });
+                      "ml-1.5 px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wide uppercase bg-zinc-100 text-zinc-800 border border-zinc-200/80",
+                    textContent: "Signed",
+                  });
+                }),
+              ],
+            }),
+
+            // Created Timestamp
+            E.span({
+              className: "tabular-nums text-zinc-400",
+              textContent: doc.createdTimestamp || "Just now",
+            }),
+          ],
+        }),
+      ],
+    }),
+  ],
+});
 }

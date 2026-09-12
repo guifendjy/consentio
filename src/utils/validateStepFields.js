@@ -1,4 +1,4 @@
-// utils/formValidation.js
+// utils/validateStepFields.js
 import { Alert } from "../store";
 
 /**
@@ -9,12 +9,14 @@ import { Alert } from "../store";
  */
 const validateStepFields = (stepData, formData) => {
   // If we are on the virtual preview page or a step without fields, bypass instantly
-  if (!stepData || !stepData.fields) return true;
+  if (!stepData || !Array.isArray(stepData.fields)) return true;
 
   /**
    * Helper function to evaluate single field structures (flattens nested fields)
    */
   const checkField = (field) => {
+    if (!field || typeof field !== "object") return true;
+
     // 1. Skip validation if the field is hidden via a dependency mismatch
     if (field.dependsOn) {
       const sourceSignal = formData[field.dependsOn.field];
@@ -37,47 +39,19 @@ const validateStepFields = (stepData, formData) => {
     const valueSignal = formData[field.id];
     const val = valueSignal ? valueSignal.value : null;
 
-    // 4. Structural Type Enforcement
-    switch (field.type) {
-      case "static":
-        return true;
-      case "date":
-        if (
-          !val ||
-          typeof val !== "object" ||
-          !val.day ||
-          !val.from ||
-          !val.to
-        ) {
-          Alert.show(
-            `Please fill out a complete date and time window for "${field.label}".`,
-          );
-          return false;
-        }
-        break;
+    // 4. Compare the field to its corresponding form value and enforce presence
+    if (field.type === "static") return true;
 
-      case "multi-select":
-        if (!val || !Array.isArray(val) || val.length === 0) {
-          Alert.show(`Please select at least one option for "${field.label}".`);
-          return false;
-        }
-        break;
-
-      case "text":
-      case "radio":
-      default:
-        // Catches uninitialized inputs, empty array loops, or plain empty string configurations
-        if (
-          val === undefined ||
-          val === null ||
-          (typeof val === "string" && !val.trim())
-        ) {
-          Alert.show(
-            `"${field.label || "Required field"}" must be completed to proceed.`,
-          );
-          return false;
-        }
-        break;
+    if (
+      val === undefined ||
+      val === null || val === false ||
+      (typeof val === "string" && !val.trim()) ||
+      (Array.isArray(val) && val.length === 0)
+    ) {
+      Alert.show(
+        `"${field.label || "Required field"}" must be completed to proceed.`,
+      );
+      return false;
     }
 
     return true;

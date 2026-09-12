@@ -6,15 +6,20 @@ const ZindexWrapper = (content, zIndex, route) => {
   const preset = ANIMATION_PRESETS[route.animation] || ANIMATION_PRESETS.none;
 
   return E.div({
-    id: "mb-zindex-layer",
+    onMount(t){
+      // initialize swipe back gesture for this view container
+      Navigator.initSwipeBack(t);
+      return ()=> Navigator.destroySwipeBack(t);
+    },
+    id: `mb-zindex-layer-${route.route}-${zIndex}`,
     className: {
-      $static: `absolute inset-0 w-full h-full ${preset.enter}`,
+      $static: `mb-zindex-layer-view-wrapper absolute inset-0 w-full h-full ${preset.enter}`,
       [preset.leave]: Navigator.activeExitRoute.derived(
         (r) => r == route.route,
       ),
     },
     style: `z-index: ${zIndex};`, // Inline style ensures dynamic numbers apply correctly
-    children: [content],
+    children: content,
   });
 };
 

@@ -7,7 +7,6 @@ import AccountView from "./views/AccountView";
 import CreateFormView from "./views/ConsentFormView";
 import ViewContainer from "./components/ViewContainer";
 import Loading from "./components/LoadingComponent";
-import ConfirmModal from "./components/ConfirmationModal";
 import ZindexWrapper from "./components/IndexLayerWrapper";
 import ErrorBanner from "./components/ErrorBanner";
 import { Navigator } from "./store";
@@ -40,7 +39,6 @@ const App = ViewContainer({
       // Wrap every single active view in its own layer calculated by its array index(and applies animation set up using the navigator)
       return ZindexWrapper(viewNode, index * 10, route);
     }),
-    ConfirmModal(), // we can use the Modal from store to trigger open and hide it.
     ErrorBanner(),
   ],
 });

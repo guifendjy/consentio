@@ -4,6 +4,8 @@ import { DocumentEngine } from "../store";
 import DocumentPreview from "./DocumentPreview"; 
 import ViewContainer from "./ViewContainer";
 
+// note use the create sheer component to build this instead.
+
 export const signatureModalConfig = $signal({ isOpen: false, targetDoc: null });
 export default function SignatureModal() {
   const signatureInput = $signal("");

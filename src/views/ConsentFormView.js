@@ -3,16 +3,16 @@ import { consentFormSchema } from "../assets/consentFormSchema";
 import ViewContainer from "../components/ViewContainer";
 import DocumentPreview from "../components/DocumentPreview";
 import renderField from "../components/RenderField";
-import { Modal, Navigator } from "../store";
+import { Navigator } from "../store";
 import { DocumentEngine } from "../store";
 import validateStepFields from "../utils/validateStepFields";
+import Modal from "../components/ConfirmationModal";
 
 /**
  * High-Fidelity Full-Screen Form Wizard Scaffold
  */
 
 const ConsentFormView = () => {
-  const currentStepIndex = $signal(0);
 
   // Data-binding model tracking configuration states
   const formData = {
@@ -28,7 +28,7 @@ const ConsentFormView = () => {
     sexualDevices: $signal("vibrator"),
     specialActivities: $signal("light bondage (wrists only)"),
 
-    contraception: $signal(["condoms", "oral contraceptive"]), // 🎯 Matched
+    contraception: $signal(["condoms", "oral contraceptive"]),
     customContraception: $signal("partner on birth control pill"),
 
     safewords: $signal("red / yellow / green"),
@@ -38,9 +38,10 @@ const ConsentFormView = () => {
 
     acknowledgment: $signal(true),
   };
-
+  
   const schemaStepsCount = consentFormSchema.length;
   const totalSteps = consentFormSchema.length + 1;
+  const currentStepIndex = $signal(0);
 
   const handleBackNavigation = () => {
     if (currentStepIndex.value > 0) {
@@ -58,7 +59,6 @@ const ConsentFormView = () => {
 
   const handleNext = () => {
     const currentStepData = consentFormSchema[currentStepIndex.value];
-
     if (!validateStepFields(currentStepData, formData)) {
       return;
     }

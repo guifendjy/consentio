@@ -1,64 +1,190 @@
 // store.js
 import { $signal } from "minibum";
 
-// Tracks if a modal is open, what text it should show, and its callback actions
-export const confirmModalConfig = $signal({
-  isOpen: false,
-  title: "",
-  message: "",
-  confirmText: "Confirm",
-  cancelText: "Cancel",
-  onConfirm: () => {},
-  onCancel: () => {},
-});
-
-export const Modal = {
-  /**
-   * Open a re-usable high-fidelity confirmation prompt from anywhere
-   */
-  show({
-    title,
-    message,
-    confirmText = "Confirm",
-    cancelText = "Cancel",
-    onConfirm,
-    onCancel,
-  }) {
-    confirmModalConfig.value = {
-      isOpen: true,
-      title,
-      message,
-      confirmText,
-      cancelText,
-      onConfirm: () => {
-        onConfirm?.();
-        Modal.hide();
-      },
-      onCancel: () => {
-        onCancel?.();
-        Modal.hide();
-      },
-    };
-  },
-  hide() {
-    confirmModalConfig.value = { ...confirmModalConfig.value, isOpen: false };
-  },
+const swipeState = {
+  startX: null,
+  startY: null,
+  hasMoved: false,
+  targetElement: null,
 };
+
+const SWIPE_BACK_EDGE_THRESHOLD = 40;
+const SWIPE_BACK_DISTANCE_THRESHOLD = 90;
+const SWIPE_BACK_VERTICAL_LIMIT = 120;
+
+
+
+function resetSwipeTarget() {
+  if (swipeState.targetElement) {
+    swipeState.targetElement.style.transform = "";
+    swipeState.targetElement.style.transition = "";
+    swipeState.targetElement.style.opacity = "";
+    swipeState.targetElement.style.boxShadow = "";
+    swipeState.targetElement = null;
+  }
+}
+
+function dismissSwipeTarget() {
+  if (swipeState.targetElement) {
+    swipeState.targetElement.style.transition = "transform 0ms ease-out, opacity 0ms ease-out";
+    swipeState.targetElement.style.transform = "translateX(100vw)";
+    swipeState.targetElement.style.opacity = "0";
+    swipeState.targetElement.style.boxShadow = "inset -10px 0 20px rgba(0, 0, 0, 0.08)";
+    swipeState.targetElement = null;
+  }
+}
+
+function findSwipeTarget(element) {
+  let current = element instanceof Element ? element : null;
+  let fallback = current;
+
+  while (current && current !== document && current !== document.documentElement) {
+    const style = getComputedStyle(current);
+    if (style.position === "absolute" || style.position === "fixed") {
+      return current;
+    }
+    fallback = current;
+    current = current.parentElement;
+  }
+
+  return fallback;
+}
+
+function handleSwipeStart(event) {
+  if ( Navigator.stack.value.length <= 1) {
+    swipeState.startX = null;
+    swipeState.targetElement = null;
+    return;
+  }
+  const touch = event.touches?.[0] || event;
+  if (touch.clientX > SWIPE_BACK_EDGE_THRESHOLD) {
+    swipeState.startX = null;
+    swipeState.targetElement = null;
+    return;
+  }
+  swipeState.startX = touch.clientX;
+  swipeState.startY = touch.clientY;
+  swipeState.hasMoved = false;
+  swipeState.targetElement = findSwipeTarget(event.target);
+}
+
+function handleSwipeMove(event) {
+  if (swipeState.startX === null) return;
+  const touch = event.touches?.[0] || event;
+  const deltaY = touch.clientY - swipeState.startY;
+  if (Math.abs(deltaY) > SWIPE_BACK_VERTICAL_LIMIT) {
+    swipeState.startX = null;
+    swipeState.startY = null;
+    resetSwipeTarget();
+    return;
+  }
+
+  const deltaX = touch.clientX - swipeState.startX;
+  if (swipeState.targetElement && deltaX > 0) {
+    swipeState.targetElement.style.transform = `translateX(${deltaX}px)`;
+    swipeState.targetElement.style.boxShadow = "inset -10px 0 20px rgba(0, 0, 0, 0.08)";
+  }
+  swipeState.hasMoved = true;
+}
+
+function handleSwipeEnd(event) {
+  if (swipeState.startX === null) return;
+  const touch = event.changedTouches?.[0] || event;
+  const deltaX = touch.clientX - swipeState.startX;
+  const deltaY = touch.clientY - swipeState.startY;
+
+  if (
+    swipeState.hasMoved &&
+    swipeState.startX <= SWIPE_BACK_EDGE_THRESHOLD &&
+    deltaX > SWIPE_BACK_DISTANCE_THRESHOLD &&
+    Math.abs(deltaY) < SWIPE_BACK_VERTICAL_LIMIT
+  ) {
+    if (Navigator.stack.value.length > 1) {
+      dismissSwipeTarget();
+      Navigator.pop();
+    }
+  }
+
+  resetSwipeTarget();
+  swipeState.startX = null;
+  swipeState.startY = null;
+  swipeState.hasMoved = false;
+}
+
+function buildURL(route, params = {}) {
+  const normalizedRoute = route ? `/${route.replace(/^\/+/g, "")}` : "/";
+  const searchParams = new URLSearchParams(params);
+  const query = searchParams.toString();
+  return normalizedRoute + (query ? `?${query}` : "");
+}
+
+// function parseSearchParams(search = "") {
+//   const params = {};
+//   const searchParams = new URLSearchParams(search.replace(/^\?/, ""));
+//   for (const [key, value] of searchParams.entries()) {
+//     params[key] = value;
+//   }
+//   return params;
+// }
+
+// function parseRouteFromLocation(pathname = "/") {
+//   const route = pathname.replace(/^\/+/g, "").replace(/\/+$/g, "");
+//   return route || "/";
+// }
+
+// function getInitialNavigatorStack() {
+//   if (typeof window === "undefined") {
+//     return [{ route: "/", animation: "none", params: {} }];
+//   }
+
+//   const navigatorState = window.history.state?.navigator;
+//   if (navigatorState?.stack?.length) {
+//     return navigatorState.stack;
+//   }
+
+//   return [
+//     {
+//       route: parseRouteFromLocation(window.location.pathname),
+//       animation: "none",
+//       params: parseSearchParams(window.location.search),
+//     },
+//   ];
+// }
+
+// function replaceCurrentHistoryState(stack) {
+//   if (typeof window === "undefined" || !window.history.replaceState) return;
+
+//   const currentEntry = stack[stack.length - 1] || {
+//     route: "/",
+//     params: {},
+//   };
+
+//   window.history.replaceState(
+//     { navigator: { stack } },
+//     "",
+//     buildURL(currentEntry.route, currentEntry.params),
+//   );
+// }
 
 export const Navigator = {
   // A signal tracking the full array stack history(will start it empty, then user can decide which view to navigate to initially.)
   stack: $signal([]),
   activeExitRoute: $signal(null),
-
   push(route, animation = "none", params = {}) {
     Navigator.activeExitRoute.value = null;
-    Navigator.stack.value = [
+    const nextStack = [
       ...Navigator.stack.value,
       { route, animation, params },
     ];
+
+    Navigator.stack.value = nextStack;
+
+    // if (typeof window !== "undefined" && window.history?.pushState) {
+    //   window.history.pushState({ navigator: { stack: nextStack } }, "", buildURL(route, params));
+    // }
   },
 
-  pop() {
+  pop(timeout = 350) {
     return new Promise((resolve) => {
       if (Navigator.stack.value.length) {
         const topItem = Navigator.stack.value[Navigator.stack.value.length - 1];
@@ -66,20 +192,50 @@ export const Navigator = {
         Navigator.activeExitRoute.value = topItem.route;
 
         setTimeout(() => {
-          const copy = Navigator.stack.value.slice();
-          copy.pop();
-          Navigator.stack.value = copy;
+          const nextStack = Navigator.stack.value.slice();
+          nextStack.pop();
+          Navigator.stack.value = nextStack;
           Navigator.activeExitRoute.value = null;
 
+            //  if (typeof window !== "undefined" && window.history?.pushState) {
+            //     window.history.pushState({ navigator: { stack: nextStack } }, "", buildURL(nextStack.at(-1)?.route, nextStack.at(-1)?.params));
+            // }
           resolve();
-        }, 350);
+        }, timeout);
       } else {
         resolve();
       }
     });
   },
+
+  initSwipeBack(target = typeof window !== "undefined" ? window : null) {
+    if (!target || !target.addEventListener) return;
+
+    target.addEventListener("touchstart", handleSwipeStart, { passive: true });
+    target.addEventListener("touchmove", handleSwipeMove, { passive: true });
+    target.addEventListener("touchend", handleSwipeEnd);
+    target.addEventListener("pointerdown", handleSwipeStart);
+    target.addEventListener("pointermove", handleSwipeMove);
+    target.addEventListener("pointerup", handleSwipeEnd);
+  },
+
+  destroySwipeBack(target = typeof window !== "undefined" ? window : null) {
+    if (!target || !target.removeEventListener) return;
+
+    target.removeEventListener("touchstart", handleSwipeStart, { passive: true });
+    target.removeEventListener("touchmove", handleSwipeMove, { passive: true });
+    target.removeEventListener("touchend", handleSwipeEnd);
+    target.removeEventListener("pointerdown", handleSwipeStart);
+    target.removeEventListener("pointermove", handleSwipeMove);
+    target.removeEventListener("pointerup", handleSwipeEnd);
+  },
 };
 
+
+
+
+
+// App state
 export const errorConfig = $signal({
   visible: false,
   isLeaving: false,
@@ -124,8 +280,11 @@ export const Alert = {
   },
 };
 
+
+
+
 export const generatedDocuments = $signal([]);
-export const inviteDocuments = $signal([]);
+export const sharedDocuments = $signal([]);
 
 export const DocumentEngine = {
   /**
@@ -136,9 +295,9 @@ export const DocumentEngine = {
     const docId = `CF-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
     const timestamp = new Date().toLocaleString();
     const token = Math.random().toString(36).substring(2, 15);
+    const shareCode = "code" // this code will be used to share the document with the partner, and they can use it to access the document and sign it.
 
     const draftPayload = {
-      isMine: false,
       id: docId,
       status: $signal("Pending signatures"), // Reactive status token
       token: token,
@@ -150,7 +309,11 @@ export const DocumentEngine = {
       signedTimestamp: $signal(null),
     };
 
-    inviteDocuments.value = [draftPayload, ...inviteDocuments.value];
+    // here we will do network request to save the document to the backend,
+    //  and then we will update the generatedDocuments signal with the new document.
+    //  and show error if the request fails. but for now we will just update the signal directly.
+    // since this is gonna be a pwa, we will use local storage to save the documents, and then we will sync them with the backend when the user is online.
+    generatedDocuments.value = [draftPayload, ...generatedDocuments.value];
     return draftPayload;
   },
 
@@ -166,14 +329,6 @@ export const DocumentEngine = {
     doc.signedTimestamp.value = new Date().toLocaleString();
     return true;
   },
-
-  /**
-   * Generates and copies an expirable share link to the clipboard
-   */
-  ShareDocLink(doc) {
-    // we will use this to share link to specific document
-    // we can allow in app users to find other users with their email or name and then send invite.
-  },
 };
 
 
@@ -184,6 +339,6 @@ export function onAuthSuccess() {
   Navigator.pop().then(() => Navigator.push("loading", "fade"));
   setTimeout(
     () => Navigator.pop().then(() => Navigator.push("home", "fade")),
-    900,
+    400,
   );
 }

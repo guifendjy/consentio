@@ -1,14 +1,15 @@
 import E from "minibum";
 import ViewContainer from "../components/ViewContainer";
-import { Navigator, generatedDocuments, inviteDocuments } from "../store";
+import { Navigator, generatedDocuments, sharedDocuments } from "../store";
 import SignatureModal from "../components/SignatureModal";
 import { $signal, $computed } from "minibum";
 import NoteCard from "../components/NoteCard";
+import Modal from "../components/ConfirmationModal";
 /**
  * Home / Dashboard View Component
  */
 
-const activeTab = $signal(0); // debug: dead derived signal. updateProps in E.list is having issues. keeping signal outside function fixes the issue.
+const activeTab = $signal(0); // debug: dead derived signal in E.list when updateProps gets called with dummy instances.
 
 const DashboardView = () =>
   ViewContainer({
@@ -32,7 +33,7 @@ const DashboardView = () =>
                 "text-zinc-500 hover:text-zinc-800 bg-transparent":
                   activeTab.derived((v) => v !== 0),
               },
-              textContent: "Notes",
+              textContent: "Consents",
               onclick: () => (activeTab.value = 0),
             }),
             // Invites Tab Button
@@ -41,7 +42,7 @@ const DashboardView = () =>
               className: {
                 $static:
                   "flex-1 text-center py-2 text-xs font-semibold rounded-xl transition-all cursor-pointer",
-                pulse: inviteDocuments.derived((invites) => invites.length > 0),
+                pulse: sharedDocuments.derived((invites) => invites.length > 0),
                 "bg-white text-zinc-900 shadow-sm": activeTab.derived(
                   (v) => v === 1,
                 ),
@@ -49,37 +50,78 @@ const DashboardView = () =>
                   activeTab.derived((v) => v !== 1),
               },
               children: [
-                E.span("Invites"),
-                E.span({
-                  className:
-                    "inline-flex h-2.5 w-2.5 rounded-full ml-3 bg-zinc-950",
-                  style: {
-                    display: $computed(
-                      (invites, activeTab) => {
-                        return invites.length > 0 && activeTab !== 1
-                          ? "inline-flex"
-                          : "none";
-                      },
-                      [inviteDocuments, activeTab],
-                    ),
-                  },
-                }),
+                E.span("Shared"),
+                // should be hidden if no invites and has been read, but for now just show it if there are invites
+                // E.span({
+                //   className:
+                //     "inline-flex h-2.5 w-2.5 rounded-full ml-3 bg-zinc-950/50 border border-zinc-950/10",
+                //     style: {
+                //     display: $computed(
+                //       (invites, activeTab) => {
+                //         return invites.length !== 0 && activeTab !== 0
+                //           ? "inline-flex"
+                //           : "none";
+                //       },
+                //       [sharedDocuments, activeTab],
+                //     ),
+                //   },
+                // }),
               ],
               onclick: () => (activeTab.value = 1),
             }),
           ],
         }),
-        // hide between the two
+        // LIST OF NOTES GENERATED
         E.list(generatedDocuments, (doc) =>
           E.div({
             className: { hidden: activeTab.derived((v) => v !== 0) },
             children: NoteCard(doc),
           }),
         ),
-        E.list(inviteDocuments, (doc) =>
+        // JOIN A NOTE SHARED WITH YOU
+        E.cond(activeTab, (tab) => {
+          if (tab !== 0) {
+            return E.div({
+              className: "py-2",
+              children: [
+                E.div({
+                  className:
+                    "rounded-2xl border border-zinc-200/60 bg-gradient-to-br from-white via-zinc-50/50 to-zinc-50 p-4 shadow-xm hover:border-zinc-300/80 transition-colors",
+                  children: [
+                    E.label({
+                      className: "text-[10px] font-medium uppercase tracking-wider text-zinc-600",
+                      textContent: "Enter Shared Code",
+                    }),
+                    E.div({
+                      className: "flex items-stretch gap-3 w-full mt-2",
+                      children: [
+                        E.input({
+                          onMount: t=> t.focus(),
+                          className:
+                            "flex-1 bg-transparent text-sm font-medium text-zinc-950 outline-none placeholder:text-zinc-400/70 min-h-[28px]",
+                          placeholder: "e.g., ABC123XYZ",
+                        }),
+                        E.button({
+                          type: "button",
+                          className:
+                            "rounded-full bg-gradient-to-br from-zinc-950 to-zinc-800 px-5 text-[11px] font-bold tracking-widest text-white transition-all hover:from-zinc-900 hover:to-zinc-700 active:scale-[0.98] shadow-md hover:shadow-lg whitespace-nowrap flex items-center justify-center",
+                          textContent: "Join",
+                        }),
+                      ],
+                    }),
+                  ],
+                }),
+              ],
+            });
+          }
+
+          return null;
+        }),
+        // LIST OF SHARED NOTES(consents you are part of)
+        E.list(sharedDocuments, (doc) =>
           E.div({
             className: { hidden: activeTab.derived((v) => v === 0) },
-            children: NoteCard(doc),
+            // children: NoteCard(doc),
           }),
         ),
         // Dynamic Empty State Fallback Node Check
@@ -91,13 +133,13 @@ const DashboardView = () =>
                 activeTab === 0 ? notes.length === 0 : invites.length === 0;
               return { isEmpty, activeTab };
             },
-            [activeTab, generatedDocuments, inviteDocuments],
+            [activeTab, generatedDocuments, sharedDocuments],
           ),
           ({ isEmpty, activeTab }) => {
             // Only render if the list is actually empty
             if (!isEmpty) return null;
 
-            const isNotesTab = activeTab === 0;
+            const isShareNoteTab = activeTab === 0;
 
             return E.div({
               className:
@@ -105,22 +147,21 @@ const DashboardView = () =>
               children: [
                 E.p({
                   className: "font-medium text-zinc-500",
-                  textContent: isNotesTab
-                    ? "No active notes saved yet."
+                  textContent: isShareNoteTab
+                    ? "No active consents saved yet."
                     : "Your inbox is clear!",
                 }),
                 E.p({
                   className:
                     "text-[11px] text-zinc-400/80 max-w-[240px] mx-auto leading-normal",
-                  textContent: isNotesTab
-                    ? "Tap the '+' below to set up a new note."
-                    : "When a partner sends you an invite link, it will show up right here for you to look over.",
+                  textContent: isShareNoteTab
+                    ? "Tap the '+' below to set up a new consent."
+                    : "When a partner shares a consent with you, it will show up right here for you to look over.",
                 }),
               ],
             });
           },
         ),
-        SignatureModal(),
       ],
     }),
     // Fab
@@ -144,7 +185,7 @@ function Header() {
               }),
               E.p({
                 className: "text-[11px] text-zinc-500",
-                textContent: "Keep track of your notes and invites.",
+                textContent: "Keep track of your consents.",
               }),
             ],
           }),
@@ -187,7 +228,7 @@ function Footer() {
         type: "button",
         onclick: () => Navigator.push("create-form", "slideUp"),
         className:
-          "w-14 h-14 rounded-full bg-gradient-to-br from-[#0f0f0f] via-[#27272a] to-[#52525b] text-[#fafafa] shadow-[0_18px_40px_rgba(15,15,15,0.25)] hover:shadow-[0_20px_45px_rgba(15,15,15,0.3)] active:scale-95 transition-all cursor-pointer pointer-events-auto flex items-center justify-center border border-white/10",
+          "w-14 h-14 rounded-full bg-gradient-to-br from-[#0f0f0f] via-[#27272a] to-[#52525b] text-[#fafafa] shadow-lg active:scale-95 transition-all cursor-pointer pointer-events-auto flex items-center justify-center border border-white/10",
         children: [
           E.svg({
             className: "w-5 h-5",

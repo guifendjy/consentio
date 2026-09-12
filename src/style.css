@@ -1,5 +1,52 @@
 @import "tailwindcss";
 
+/* Change this value to scale the app-wide rem-based Tailwind typography. */
+/* @layer base {
+  html {
+    font-size: 16px;
+  }
+} */
+
+
+html, body, #app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;          /* prevent body scroll */
+  overscroll-behavior: none; /* extra safety */
+}
+
+/* Optional but recommended for PWAs */
+@supports (height: 100dvh) {
+  html, body {
+    height: 100dvh;
+  }
+}
+
+.mb-zindex-layer-view-wrapper{
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+
+  touch-action: manipulation; 
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+[role="button"],
+[role="link"], *:active, *:focus {
+  touch-action: manipulation;
+}
+
+
+
+
+
 @layer utilities {
   /* No performance overhead static layer */
   .animate-none {
@@ -194,3 +241,6 @@
     transform: scale3d(0.96, 0.96, 1);
   }
 }
+
+
+

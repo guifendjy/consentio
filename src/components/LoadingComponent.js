@@ -6,7 +6,6 @@ import ViewContainer from "./ViewContainer";
  */
 const LoadingComponent = () =>
   ViewContainer({
-    animation: { enter: "scaleUp" },
     content: E.div({
       className:
         "w-full h-full min-h-[400px] flex flex-col items-center justify-center gap-5 select-none",
